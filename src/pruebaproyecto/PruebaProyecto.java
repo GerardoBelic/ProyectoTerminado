@@ -9,14 +9,19 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Random;
 import java.util.Queue;
+import java.util.concurrent.TimeUnit;
 
 public class PruebaProyecto {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
+        
+        System.out.println("Eliminando residuos");
         
         generarNumeros();
         
         eliminarResiduos();
+        
+        TimeUnit.MILLISECONDS.sleep(2000);
         
         File folder = new File("./");
         File[] listaDeArchivos = folder.listFiles();
@@ -138,6 +143,14 @@ public class PruebaProyecto {
         escribirArchivoNuevo.close();
         
         System.out.println("\nTerminado");
+        
+        System.out.println("Presiona ENTER para terminar...");
+        try
+        {
+            System.in.read();
+        }  
+        catch(Exception e)
+        {}  
         
     }
     
