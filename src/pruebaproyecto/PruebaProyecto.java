@@ -23,6 +23,11 @@ public class PruebaProyecto {
         
         TimeUnit.MILLISECONDS.sleep(2000);
         
+        /*
+        Este bloque lee todos los archivos que estan alrededor del ejecutable, y de ellos
+        crea una lista de los archivos que sean txt
+        */
+        
         File folder = new File("./");
         File[] listaDeArchivos = folder.listFiles();
         
@@ -53,6 +58,10 @@ public class PruebaProyecto {
         Scanner leerArchivoOriginal = new Scanner(miRuta);
         FileWriter copiarArchivoOriginal = new FileWriter("F0.txt");
         
+        /*
+        Copia el contenido del archivo y lo copia a F0.txt
+        */
+        
         while(leerArchivoOriginal.hasNextLine())
         {
             copiarArchivoOriginal.write(leerArchivoOriginal.nextLine());   //En teoria solo deberia copiar una linea
@@ -61,6 +70,11 @@ public class PruebaProyecto {
         copiarArchivoOriginal.flush();
         copiarArchivoOriginal.close();
         leerArchivoOriginal.close();
+        
+        /*
+        Este apartado cuenta los numeros del archivo, que seran utilizados
+        mas adelante para manejar cuantos numeros hay por bloque
+        */
         
         Scanner contarNumeros = new Scanner(miRuta);
         contarNumeros.useDelimiter(",");
@@ -110,6 +124,11 @@ public class PruebaProyecto {
                 break;
         }
         
+        /*
+        El siguiente bloque copia la ultima linea de F0.txt, que es la linea ya
+        ordenada
+        */
+        
         Path rutaDeF0 = Paths.get("F0.txt");
         Scanner leerLineaFinal = new Scanner(rutaDeF0);
         int numeroDeLineas = 0;
@@ -122,6 +141,11 @@ public class PruebaProyecto {
         leerLineaFinal = new Scanner(rutaDeF0);
         for (int k = 0; k < numeroDeLineas - 1; ++k)
             leerLineaFinal.nextLine();
+        
+        /*
+        Aqui se crea un nuevo archivo con el nombre del archivo que se ordeno,
+        agregandosele la palabra "Ordenado"
+        */
         
         String nombreDeArchivoNuevo = archivosDisponibles.get(opcionArchivo - 1);
         String[] sinExtension = nombreDeArchivoNuevo.split("\\.");
@@ -156,9 +180,16 @@ public class PruebaProyecto {
     
     public static void polifase(boolean orden, int numeroDatos) throws IOException
     {
+        /*
+        Esta funcion asigna bloques de n/8 datos, los cuales son escritos alternadamente
+        en F1.txt y F2.txt, y notese que solo es la primera parte donde todos los bloques
+        iniciales se ordenan con cualquier algoritmo de ordenamiento (bubble sort en este caso)
+        */
+        
         ArrayList<Float> arrDatos = new ArrayList<>();
         Path rutaF0 = Paths.get("F0.txt");
         Scanner leerF0 = new Scanner(rutaF0);
+        //El delimitador le indica al scanner que los numeros estan separados por comas
         leerF0.useDelimiter(",");
         FileWriter archivoF1 = new FileWriter("F1.txt");
         FileWriter archivoF2 = new FileWriter("F2.txt");
@@ -174,8 +205,11 @@ public class PruebaProyecto {
                     break;
             }
             
+            
+            //Aqui es donde se ordenan con bubble sort los bloques
             ordenar(arrDatos, orden);
             
+            //Aqui se alterna entre escribir un bloque en F1 o F2
             if (alternar)
             {
                 archivoF1.write(arrDatos.get(0).toString());
@@ -207,11 +241,29 @@ public class PruebaProyecto {
         archivoF1.close();
         archivoF2.close();
         
+        //Esta es la segunda parte de polifase
         convergerBloques(orden);
     }
     
     private static void convergerBloques(boolean orden) throws IOException
     {
+        /*
+        PRECAUCION: Estas apunto de entrar a la funcion menos legible que hayas visto.
+        
+        Lo que se quiere lograr en esta funcion es que se lean los bloques que hay en
+        F1 y F2, los cuales podrian tener forma de:
+        Polifase
+        F1 [4 4 4]
+        F2 [4 4 0]
+        o mezcla equilibrada
+        F1 [3 5 1]
+        F2 [6 2 4]
+        y lo que se quiere lograr es que se combinen bloques mediante Merge Sort
+        El problema es que cuando escribi esta funcion no sabia usar expresiones
+        regulares, las cuales son de ayuda para leer informacion que nos interesa, 
+        por lo que en el codigo se vera mucho el cambio de delimitadores entre comas
+        y apostrofes
+        */
         
         Path rutaF0 = Paths.get("F0.txt");
         Path rutaF1 = Paths.get("F1.txt");
@@ -224,6 +276,10 @@ public class PruebaProyecto {
         
         int temp = 0;
         
+        /*
+        Estas listas almacenan el tamaño de los bloques de numeros ordenados,
+        para que al combinar dos bloques, el programa sepa cuantos numeros esperar
+        */
         ArrayList<Integer> numerosPorBloqueF1 = new ArrayList<>();
         ArrayList<Integer> numerosPorBloqueF2 = new ArrayList<>();
         ArrayList<Integer> numerosPorBloqueF0 = new ArrayList<>();
@@ -232,10 +288,12 @@ public class PruebaProyecto {
         {
             switch (bloquesF1.next())
             {
+                //Si se detectan apostrofes, significa que el bloque termina
                 case "'":
                     numerosPorBloqueF1.add(temp + 1);
                     temp = 0;
                     break;
+                //Se añaden numeros al bloque actual
                 case ",":
                     ++temp;
                     break;
@@ -260,9 +318,11 @@ public class PruebaProyecto {
         
         bloquesF2.close();
         
+        //En caso de que F1 tenga n bloques y F2 tenga n-1, esta condicional agrega un cero al final de F2
         if (numerosPorBloqueF1.size() != numerosPorBloqueF2.size())
             numerosPorBloqueF2.add(0);
         
+        //Numero que determina apartir del numero de bloques de F1 o F2 cuantas iteraciones se necesitan
         int numeroDeIteraciones = (numerosPorBloqueF1.size() + 3) / 2;
         
         for (int i = 0; i < numeroDeIteraciones; ++i)
@@ -272,6 +332,9 @@ public class PruebaProyecto {
             {
                 numerosPorBloqueF0.add(numerosPorBloqueF1.get(j) + numerosPorBloqueF2.get(j));
             }
+            
+            
+            //Esta parte esta destinada a informar del estado actual de los bloques
             
             System.out.println("Iteracion :" + i);
             
@@ -301,6 +364,11 @@ public class PruebaProyecto {
             
             FileWriter escribirF0 = new FileWriter("F0.txt", true);
             
+            /*
+            Como el scanner empieza a leer desde el principio, esta funcion permite
+            ir a la linea donde estan los datos mas recientes
+            */
+            
             for (int linea = 0; linea < i; ++linea)
             {
                 leerLineaF1.nextLine();
@@ -311,18 +379,27 @@ public class PruebaProyecto {
             
             for (int j = 0; j < numerosPorBloqueF1.size(); ++j) //Un ciclo donde se recorren todos los bloques de F1
             {
-                
+                /*
+                Como los bloques estan ordenados, podemos meter archivos de F1 y F2 a distinas colas
+                y desencolarlas con la seguridad de que estaran en orden
+                */
                 Queue<Float> miColaF1 = new LinkedList<>();
                 Queue<Float> miColaF2 = new LinkedList<>();
                 
+                //Mientras haya archivos por leer
                 while (numerosPorBloqueF1.get(j) + numerosPorBloqueF2.get(j) > 0)
                 {
                     
+                    //Condicional en caso de que ambos bloques contengan datos
                     if (numerosPorBloqueF1.get(j) > 0 && numerosPorBloqueF2.get(j) > 0)
                     {
                         
                         Float tempF1, tempF2;
                         
+                        /*
+                        En caso de que sobre solo un dato en F2, el scanner cambia de delimitadores para
+                        prevenir que lea un caracter desconocido y se deje de funcionar el programa
+                        */
                         if (numerosPorBloqueF1.get(j) > 1 && numerosPorBloqueF2.get(j) == 1)
                         {
                             leerLineaF2.useDelimiter("");
@@ -335,6 +412,7 @@ public class PruebaProyecto {
                             miColaF1.add(tempF1);
                             miColaF2.add(tempF2);
                             
+                            //Se desencola conforme al orden indicado
                             if (!orden)
                             {
 
@@ -362,13 +440,16 @@ public class PruebaProyecto {
                                 
                             }
                             
+                            //Se actualiza el estado de los bloques actuales de n a n-1
                             numerosPorBloqueF1.set(j, numerosPorBloqueF1.get(j) - 1);
                             numerosPorBloqueF2.set(j, numerosPorBloqueF2.get(j) - 1);
                             
                             leerLineaF2.useDelimiter("");
                             leerLineaF2.next();
                         }
-                        
+                        /*
+                        Lo mismo de arriba, pero ahora con F1 teniendo un elemento
+                        */
                         else if (numerosPorBloqueF1.get(j) == 1 && numerosPorBloqueF2.get(j) > 1)
                         {
                             leerLineaF1.useDelimiter("");
@@ -412,6 +493,9 @@ public class PruebaProyecto {
                             leerLineaF1.next();
                         }
                         
+                        /*
+                        Un caso donde se espera leer comas y apostrofes en ambos bloques
+                        */
                         else if (numerosPorBloqueF1.get(j) == 1 && numerosPorBloqueF2.get(j) == 1)
                         {
                             leerLineaF1.useDelimiter("");
@@ -459,7 +543,10 @@ public class PruebaProyecto {
                             leerLineaF1.next();
                             leerLineaF2.next();
                         }
-                        
+                        /*
+                        Caso normal donde F1 y F2 tienen varios elementos del mismo bloque
+                        por leer
+                        */
                         else
                         {
 
@@ -498,6 +585,10 @@ public class PruebaProyecto {
                         }
                         
                     }
+                    /*
+                    En caso de que solo un bloque tenga archivos, se tiene la seguridad
+                    de que todos estan ordenados, por lo que solo se copian directo del bloque
+                    */
                     else if (numerosPorBloqueF1.get(j) > 0)
                     {
                         
@@ -530,6 +621,7 @@ public class PruebaProyecto {
                         }
                         
                     }
+                    //Lo mismo de antes
                     else
                     {
                         
@@ -567,6 +659,9 @@ public class PruebaProyecto {
                     
                 }
                 
+                /*
+                Si hay elementos restantes en la cola, entonces se desencolan y agregan a F0
+                */
                 while (!miColaF1.isEmpty() || !miColaF2.isEmpty())
                 {
                     if (!miColaF1.isEmpty() && !miColaF2.isEmpty())
@@ -614,6 +709,7 @@ public class PruebaProyecto {
             leerLineaF1.close();
             leerLineaF2.close();
             
+            //Si F0 solo tiene un bloque, el algoritmo ya ordeno todos los datos
             if (numerosPorBloqueF0.size() == 1)
             {
                 return;
@@ -622,6 +718,10 @@ public class PruebaProyecto {
             numerosPorBloqueF1.clear();
             numerosPorBloqueF2.clear();
             
+            /*
+            Como en F0 hay varios bloques combinados de F1 y F2, entonces aqui
+            se separan nuevamente en F1 y F2
+            */
             for (int j = 0; j < numerosPorBloqueF0.size(); ++j)
             {
                 if (j % 2 == 0)
@@ -639,14 +739,16 @@ public class PruebaProyecto {
                 leerLineaF0.nextLine();
             }
             
-            //boolean alternar = true;
+            
             FileWriter escribirF1 = new FileWriter("F1.txt", true);
             FileWriter escribirF2 = new FileWriter("F2.txt", true);
             
             escribirF1.write(System.getProperty("line.separator"));
             escribirF2.write(System.getProperty("line.separator"));
             
-            //System.out.println("numeros por bloque f0 " + numerosPorBloqueF0.size());
+            
+            //Aqui ocurre la separacion
+            
             for (int j = 0; j < numerosPorBloqueF0.size(); ++j)
             {
                 if (j % 2 == 0)
@@ -735,6 +837,8 @@ public class PruebaProyecto {
     public static void mezclaEquilibrada(boolean orden, int numeroDatos) throws IOException
     {
         
+        //Esta funcion consiste en crear bloques que esten ya ordenados
+        
         ArrayList<Float> arrDatos = new ArrayList<>();
         Path rutaF0 = Paths.get("F0.txt");
         Scanner leerF0 = new Scanner(rutaF0);
@@ -744,13 +848,17 @@ public class PruebaProyecto {
         boolean alternar = true;
         boolean bloqueEspecial = false;
         
+        //El programa empieza leyendo un numero, ya que este se comparara iniciando el ciclo
         Float temp = leerF0.nextFloat();
         
         do
         {
 
             arrDatos.add(temp);
-            
+            /*
+            En este ciclo se decide si un bloque sigue creciendo o si el ultimo
+            numero leido no esta ordenado con respecto a los demas
+            */
             for (int i = 0; leerF0.hasNextFloat(); ++i)
             {
                 temp = leerF0.nextFloat();
@@ -800,6 +908,11 @@ public class PruebaProyecto {
                     bloqueEspecial = false;
             }
             
+            /*
+            En caso de que se hayan leido todos los numeros y solo haya uno
+            en la variable temporal, se activa el "Caso especial" que consiste
+            en asignarle un bloque solo para ese numero
+            */
             if (!leerF0.hasNextFloat())
                 if (arrDatos.get(arrDatos.size() - 1) != temp)
                 {
@@ -814,13 +927,21 @@ public class PruebaProyecto {
         leerF0.close();
         archivoF1.close();
         archivoF2.close();
-        
+        /*
+        Mezcla equilibrada tambien hace uso de converger bloques, ya que este
+        ordenamiento y Polifase tienen la misma logica de usar Merge sort
+        */
         convergerBloques(orden);
         
     }
     
     public static void distribucion(boolean orden, int numeroDatos) throws IOException
     {
+        /*
+        En distribucion, se crea un archivo para cada numero que hay
+        y a diferencia de los otros algoritmos, este puede tener bloques
+        vacios en determinados momentos
+        */
         
         Path rutaFControl = Paths.get("F0.txt");
         Path rutaF0 = Paths.get("F_0.txt");
@@ -859,6 +980,12 @@ public class PruebaProyecto {
         int maxDecimales = 0;
         int maxEnteros = 0;
         
+        /*
+        Este ciclo tiene como objetivo detectar el maximo numero de enteros, decimales
+        y la suma de estos, con el objetivo de calcular el numero de iteraciones
+        que se necesitan para ordenar los numeros
+        */
+        
         do
         {
             Float temp = recorrerFControl.nextFloat();
@@ -886,10 +1013,19 @@ public class PruebaProyecto {
         {
             
             Scanner leerFControl = new Scanner(rutaFControl);
+            /*
+            Este delimitador puede leer numeros entre comillas o apostrofes
+            lo que se conoce como expresiones regulares (regex)
+            */
             leerFControl.useDelimiter(",|'");
             
             for (int j = 0; j < i; ++j)
                 leerFControl.nextLine();
+            
+            /*
+            Aqui se detecta desde que linea se tienen que desencolar
+            los numeros
+            */
             
             FileWriter[] escrituraDeArchivos =
             {
@@ -910,6 +1046,12 @@ public class PruebaProyecto {
             for (int j = 0; j < 10; ++j)
                 numerosPorArchivo.add(0);
             
+            /*
+            El objetivo de este ciclo es añadir ceros a la izquierda de un numero si este
+            no tiene el mismo numero de enteros que el numero con mas enteros, y tambien añade
+            ceros a la derecha si el numero de decimales no es igual que el numero con mas decimales,
+            dando numeros con el mismo numero de caracteres sin punto decimal
+            */
             for (int j = 0; j < numeroDatos; ++j)
             {
                 Float lectura = leerFControl.nextFloat();
@@ -961,7 +1103,10 @@ public class PruebaProyecto {
             
             for (Scanner s : lecturaDeArchivos)
                 s.useDelimiter(",");
-            
+            /*
+            Se informa al usuario de las iteraciones en el digito acutal,
+            para saber cuantos bloques de cada archivo se llenaron
+            */
             System.out.println("\nIteracion del digito " + (maxNumeros - i - 1));
             
             System.out.println("Numeros por bloque :");
@@ -972,6 +1117,12 @@ public class PruebaProyecto {
             
             FileWriter escribirFControl = new FileWriter("F0.txt", true);
             escribirFControl.write(System.getProperty("line.separator"));
+            
+            /*
+            Aqui se decide en que orden se desencolan los archivos, si de
+            0 a 9 para que sean ascendentes, o de 9 a 0 para que estos sean
+            descencientes
+            */
             
             if (!orden)
             {
@@ -1033,7 +1184,9 @@ public class PruebaProyecto {
     
     public static void ordenar(ArrayList<Float> lista, boolean orden)
     {
-        
+        /*
+        Se uso bubble sort por facilidad
+        */
         if (!orden)
         {
             for (int i = 0; i < lista.size(); ++i)
@@ -1072,7 +1225,7 @@ public class PruebaProyecto {
     {
         Random rand = new Random();
         FileWriter numerosAleatorios = new FileWriter("numerosAleatorios.txt");
-        for (int i = 0; i < 20 - 1; ++i)
+        for (int i = 0; i < 10000 - 1; ++i)
         {
             Float aa = rand.nextFloat() * (100);
             numerosAleatorios.write(aa.toString() + ",");
